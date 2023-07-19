@@ -10,6 +10,7 @@ let total_gc_time = ref 0
 let start_time = ref 0.0
 let end_time = ref 0.0
 let cpu_time = ref 0.0
+let domain_times = Array.make 128 0
 
 let lifecycle _domain_id _ts lifecycle_event _data =
   match lifecycle_event with
@@ -73,6 +74,7 @@ let print_percentiles json output hist =
     Printf.fprintf oc "GC time (s):\t%.2f\n" gc_time;
     Printf.fprintf oc "GC overhead (%% of wall time):\t%.2f%%\n"
       (gc_time /. !cpu_time *. 100.);
+    Array.iteri (fun i x -> if (x > 0) then Printf.fprintf oc "Domain%d: \t%.2f\n" i (float_of_int x /. 1000000000.)) domain_times;
     Printf.fprintf oc "\n";
     Printf.fprintf oc "GC latency profile:\n";
     Printf.fprintf oc "#[Mean (ms):\t%.2f,\t Stddev (ms):\t%.2f]\n" mean_latency
@@ -227,7 +229,8 @@ let gc_stats json output exec_args =
         Hashtbl.remove current_event ring_id;
         let latency = Int64.to_int (Int64.sub (Ts.to_int64 ts) saved_ts) in
         assert (H.record_value hist latency);
-        total_gc_time := !total_gc_time + latency
+        total_gc_time := !total_gc_time + latency;
+        domain_times.(ring_id) <- domain_times.(ring_id) + latency
     | _ -> ()
   in
   let init = Fun.id in
