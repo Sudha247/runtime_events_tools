@@ -9,11 +9,17 @@ type trace_format = Json | Fuchsia
 let total_gc_time = ref 0
 let start_time = ref 0.0
 let end_time = ref 0.0
+let cpu_time = ref 0.0
 
 let lifecycle _domain_id _ts lifecycle_event _data =
   match lifecycle_event with
   | Runtime_events.EV_RING_START -> start_time := Unix.gettimeofday ()
-  | Runtime_events.EV_RING_STOP -> end_time := Unix.gettimeofday ()
+  | Runtime_events.EV_RING_STOP ->
+      begin
+      end_time := Unix.gettimeofday ();
+      let times = Unix.times () in
+      cpu_time := times.tms_utime +. times.tms_cutime
+      end
   | _ -> ()
 
 let print_percentiles json output hist =
@@ -63,9 +69,10 @@ let print_percentiles json output hist =
     Printf.fprintf oc "\n";
     Printf.fprintf oc "Execution times:\n";
     Printf.fprintf oc "Wall time (s):\t%.2f\n" total_time;
+    Printf.fprintf oc "CPU time (s):\t%.2f\n" !cpu_time;
     Printf.fprintf oc "GC time (s):\t%.2f\n" gc_time;
     Printf.fprintf oc "GC overhead (%% of wall time):\t%.2f%%\n"
-      (gc_time /. total_time *. 100.);
+      (gc_time /. !cpu_time *. 100.);
     Printf.fprintf oc "\n";
     Printf.fprintf oc "GC latency profile:\n";
     Printf.fprintf oc "#[Mean (ms):\t%.2f,\t Stddev (ms):\t%.2f]\n" mean_latency
