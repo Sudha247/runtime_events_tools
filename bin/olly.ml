@@ -16,11 +16,9 @@ let lifecycle _domain_id _ts lifecycle_event _data =
   match lifecycle_event with
   | Runtime_events.EV_RING_START -> start_time := Unix.gettimeofday ()
   | Runtime_events.EV_RING_STOP ->
-      begin
       end_time := Unix.gettimeofday ();
       let times = Unix.times () in
       cpu_time := times.tms_utime +. times.tms_cutime
-      end
   | _ -> ()
 
 let print_percentiles json output hist =
@@ -74,7 +72,12 @@ let print_percentiles json output hist =
     Printf.fprintf oc "GC time (s):\t%.2f\n" gc_time;
     Printf.fprintf oc "GC overhead (%% of wall time):\t%.2f%%\n"
       (gc_time /. !cpu_time *. 100.);
-    Array.iteri (fun i x -> if (x > 0) then Printf.fprintf oc "Domain%d: \t%.2f\n" i (float_of_int x /. 1000000000.)) domain_times;
+    Array.iteri
+      (fun i x ->
+        if x > 0 then
+          Printf.fprintf oc "Domain%d: \t%.2f\n" i
+            (float_of_int x /. 1000000000.))
+      domain_times;
     Printf.fprintf oc "\n";
     Printf.fprintf oc "GC latency profile:\n";
     Printf.fprintf oc "#[Mean (ms):\t%.2f,\t Stddev (ms):\t%.2f]\n" mean_latency
