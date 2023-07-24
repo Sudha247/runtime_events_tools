@@ -9,12 +9,14 @@ type trace_format = Json | Fuchsia
 let total_gc_time = ref 0
 let start_time = ref 0.0
 let end_time = ref 0.0
+let counter = ref 0
 
 let lifecycle _domain_id _ts lifecycle_event _data =
   match lifecycle_event with
   | Runtime_events.EV_RING_START -> start_time := Unix.gettimeofday ()
   | Runtime_events.EV_RING_STOP -> end_time := Unix.gettimeofday ()
-  | Runtime_events.EV_DOMAIN_SPAWN -> ()
+  | Runtime_events.EV_DOMAIN_SPAWN -> incr counter
+  | Runtime_events.EV_DOMAIN_TERMINATE -> decr counter
   | _ -> ()
 
 let print_percentiles json output hist =
