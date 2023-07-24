@@ -14,6 +14,7 @@ let lifecycle _domain_id _ts lifecycle_event _data =
   match lifecycle_event with
   | Runtime_events.EV_RING_START -> start_time := Unix.gettimeofday ()
   | Runtime_events.EV_RING_STOP -> end_time := Unix.gettimeofday ()
+  | Runtime_events.EV_DOMAIN_SPAWN -> ()
   | _ -> ()
 
 let print_percentiles json output hist =
